@@ -1,0 +1,216 @@
+import React, { useState, useEffect, useRef } from 'react';
+import Header from '../Header';
+import EndGame from '../EndGame';
+
+const Easy = () => {
+    const [flippedCards, setFlippedCards] = useState([]);
+    const [matchedCards, setMatchedCards] = useState([]);
+    const [selectedCardIds, setSelectedCardIds] = useState([]);
+    const [cardsData, setCardsData] = useState([]);
+    const [initialReveal, setInitialReveal] = useState(true);
+    const [time, setTime] = useState(60);
+    const [score, setScore] = useState(0);
+    const [gameState, setGameState] = useState("");
+    const timerRef = useRef(null);
+    const [gameStateMessage, setGameStateMessage] = useState('');
+    const [rank, setRank] = useState("DNF");
+
+    const startTimer = () => {
+        timerRef.current = setInterval(() => {
+            setTime(prevTime => prevTime - 1); // Decrement time every second
+        }, 1000);
+    };
+
+    useEffect(() => {
+        if (time === 0) {
+            console.log('Game Over');
+            // Add your game over logic here
+        }
+    }, [time]);
+    useEffect(() => {
+        resetGame();
+    }, []);
+
+    const resetGame = () => {
+        setFlippedCards([])
+        setMatchedCards([])
+        setSelectedCardIds([])
+        setScore(0)
+        setTime(120)
+        setGameState('playing')
+        setInitialReveal(true);
+
+        const initialCardsData = [
+            { id: 1, name: '1' },
+            { id: 2, name: '1' },
+            { id: 3, name: '1' },
+            { id: 4, name: '2' },
+            { id: 5, name: '2' },
+            { id: 6, name: '2' },
+            { id: 7, name: '3' },
+            { id: 8, name: '3' },
+            { id: 9, name: '3' },
+            { id: 10, name: '4' },
+            { id: 11, name: '4' },
+            { id: 12, name: '4' },
+            { id: 13, name: '5' },
+            { id: 14, name: '5' },
+            { id: 15, name: '5' },
+            { id: 16, name: 'bonus' },
+            { id: 17, name: '6' },
+            { id: 18, name: '6' },
+            { id: 19, name: '6' },
+            { id: 20, name: '7' },
+            { id: 21, name: '7' },
+            { id: 22, name: '7' },
+            { id: 23, name: '8' },
+            { id: 24, name: '8' },
+            { id: 25, name: '8' },
+            { id: 26, name: '9' },
+            { id: 27, name: '9' },
+            { id: 28, name: '9' },
+            { id: 29, name: '10' },
+            { id: 30, name: '10' },
+            { id: 31, name: '10' },
+            { id: 32, name: '11' },
+            { id: 33, name: '11' },
+            { id: 34, name: '11' },
+            { id: 35, name: '12' },
+            { id: 36, name: '12' },
+            { id: 37, name: '12' },
+            { id: 38, name: '13' },
+            { id: 39, name: '13' },
+            { id: 40, name: '13' },
+            { id: 41, name: '14' },
+            { id: 42, name: '14' },
+            { id: 43, name: '14' },
+            { id: 44, name: '15' },
+            { id: 45, name: '15' },
+            { id: 46, name: '15' },
+            { id: 47, name: '16' },
+            { id: 48, name: '16' },
+            { id: 49, name: '16' }
+        ];
+        const shuffledCards = initialCardsData.sort(() => Math.random() - 0.5);
+        setCardsData(shuffledCards);
+
+        setTimeout(() => {
+            setInitialReveal(false);
+            setFlippedCards([]);
+            startTimer(); 
+        }, 3000); 
+    }
+
+    const handleCardClick = (id) => {
+        if (initialReveal) {
+            return; // Don't allow clicking during the initial reveal period
+        }
+
+        if (flippedCards.length === 3 && !flippedCards.includes(id)) {
+            return;
+        }
+
+        if (flippedCards.includes(id) || matchedCards.includes(id)) {
+            return;
+        } else {
+            const clickedCard = cardsData.find(card => card.id === id);
+            if (clickedCard.name === 'bonus') {
+                handleBonusCardClick();
+            } else {
+                if (flippedCards.length < 3) {
+                    setFlippedCards([...flippedCards, id]);
+                    setSelectedCardIds([...selectedCardIds, id]);
+                } else {
+                    return;
+                }
+            }
+        }
+    };
+    useEffect(() => {
+        if (selectedCardIds.length === 3) {
+            checkForMatch();
+        }
+    }, [selectedCardIds]);
+    const checkForMatch = () => {
+        const selectedCards = selectedCardIds.map(id => cardsData.find(card => card.id === id));
+        if (selectedCards.every(card => card.name === selectedCards[0].name)) {
+            setMatchedCards([...matchedCards, ...selectedCardIds]);
+            setScore(score + 1)
+            setTimeout(() => {
+                setFlippedCards([]);
+                setSelectedCardIds([]);
+            }, 500);
+        } else {
+            setTimeout(() => {
+                setFlippedCards(flippedCards.filter(id => !selectedCardIds.includes(id)));
+                setSelectedCardIds([]);
+            }, 500);
+        }
+    };
+
+    useEffect(() => {
+        if (cardsData.length === matchedCards.length && cardsData.length !== 0) {
+            setGameState('win');
+            setGameStateMessage("Victory!")
+            setRank("#1")
+            clearInterval(timerRef.current); // Stop the timer
+            console.log('Remaining time:', time);
+        }
+    }, [matchedCards, cardsData]);
+
+    useEffect(() => {
+        if (time === 0) {
+            setScore(0)
+            setGameStateMessage("You Lose")
+            setGameState('lose');
+            clearInterval(timerRef.current); // Stop the timer
+            // You can add any logic you want when the timer reaches 0, like game over or redirect to another page.
+        }
+    }, [time]);
+
+
+    const handleBonusCardClick = () => {
+        console.log("+60s");
+        const bonusCardIndex = cardsData.findIndex(card => card.name === 'bonus');
+        const updatedFlippedCards = flippedCards.filter(id => id !== cardsData[bonusCardIndex].id);
+        setFlippedCards(updatedFlippedCards);
+        setMatchedCards([...matchedCards, cardsData[bonusCardIndex].id]);
+    };
+
+    return (
+        <>
+            {gameState !== 'playing' && (
+                <EndGame rank = {rank} gameStateMessage = {gameStateMessage} score = {score} time={time} resetGame = {resetGame}/>
+            )}
+            <Header />
+            <div className="game-container">
+                <div className="game-info">
+                    <div className="timer">Time: <span className='accent-text'>{formatTime(time)}</span></div>
+                    <div className="score">Score: <span className='accent-text'>{score}</span></div>
+                </div>
+                <div className="card-container-2">
+                    {cardsData.map(card => (
+                        <div key={card.id} className={`flip ${initialReveal ? 'flipped' : (flippedCards.includes(card.id) || matchedCards.includes(card.id) ? 'flipped' : '')} ${matchedCards.includes(card.id) ? 'disabled-card' : ''}`} onClick={() => handleCardClick(card.id)} >
+                            <div className="front">
+                                <img className='card-front-image' src="/svg/question.svg" alt="" />
+                            </div>
+                            <div className="back">
+                            {flippedCards.includes(card.id) || matchedCards.includes(card.id) || initialReveal ? (
+                                    <img src={`/icons/${card.name}.svg`} alt="" />
+                            ) : null}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
+    );
+};
+
+const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+};
+
+export default Easy;
